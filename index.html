@@ -6,6 +6,20 @@
     <title>Unity WebGL Player | Duck It!</title>
     <link rel="shortcut icon" href="TemplateData/favicon.ico">
     <link rel="stylesheet" href="TemplateData/style.css">
+    <!-- VK Bridge Integration -->
+    <script src="https://unpkg.com/@vkontakte/vk-bridge/dist/browser.min.js"></script>
+    <script>
+      // Initialize VK Bridge
+      vkBridge.send('VKWebAppInit');
+      
+      // Subscribe to VK Bridge events
+      vkBridge.subscribe((e) => {
+        if (window.unityInstance) {
+          // Send VK events to Unity
+          window.unityInstance.SendMessage('VKBridge', 'OnVKEvent', JSON.stringify(e));
+        }
+      });
+    </script>
   </head>
   <body>
     <div id="unity-container" class="unity-desktop">
@@ -56,19 +70,18 @@
         updateBannerVisibility();
       }
 
-      var buildUrl = "Build";
-      var loaderUrl = buildUrl + "/BuildtoWebGL.loader.js";
-      var config = {
-        dataUrl: buildUrl + "/BuildtoWebGL.data.br",
-        frameworkUrl: buildUrl + "/BuildtoWebGL.framework.js.br",
-        codeUrl: buildUrl + "/BuildtoWebGL.wasm.br",
-        streamingAssetsUrl: "StreamingAssets",
-        companyName: "DefaultCompany",
-        productName: "Duck It!",
-        productVersion: "1.0.2",
-        showBanner: unityShowBanner,
-      };
-
+var buildUrl = "Build";
+var loaderUrl = buildUrl + "/BuildtoVK.loader.js";
+var config = {
+  dataUrl: buildUrl + "/BuildtoVK.data",
+  frameworkUrl: buildUrl + "/BuildtoVK.framework.js",
+  codeUrl: buildUrl + "/BuildtoVK.wasm",
+  streamingAssetsUrl: "StreamingAssets",
+  companyName: "DefaultCompany",
+  productName: "Duck It!",
+  productVersion: "1.0.2",
+  showBanner: unityShowBanner,
+};
       // By default, Unity keeps WebGL canvas render target size matched with
       // the DOM size of the canvas element (scaled by window.devicePixelRatio)
       // Set this to false if you want to decouple this synchronization from
@@ -100,20 +113,25 @@
 
       loadingBar.style.display = "block";
 
+  // Your existing Unity setup code remains unchanged until the createUnityInstance call
+      
       var script = document.createElement("script");
       script.src = loaderUrl;
       script.onload = () => {
         createUnityInstance(canvas, config, (progress) => {
           progressBarFull.style.width = 100 * progress + "%";
-              }).then((unityInstance) => {
-                loadingBar.style.display = "none";
-                fullscreenButton.onclick = () => {
-                  unityInstance.SetFullscreen(1);
-                };
-              }).catch((message) => {
-                alert(message);
-              });
-            };
+        }).then((unityInstance) => {
+          loadingBar.style.display = "none";
+          // Store Unity instance globally for VK Bridge communication
+          window.unityInstance = unityInstance;
+          fullscreenButton.onclick = () => {
+            unityInstance.SetFullscreen(1);
+          };
+        }).catch((message) => {
+          alert(message);
+        });
+      };
+
 
       document.body.appendChild(script);
 
